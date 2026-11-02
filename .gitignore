@@ -1,0 +1,11 @@
+# local face data (people.json); Render uses Firebase, so this should never be committed
+data/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# optional extras
+.env
+.venv/
+.DS_Store
