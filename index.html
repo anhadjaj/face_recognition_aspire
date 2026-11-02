@@ -1,0 +1,517 @@
+<!-- <!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASPIRE Face Lab</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --txt:#e8eaf0; --mut:#8b93a5; --acc:#5b9dff; --ok:#3ecf6e; --bad:#ff5d5d; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  h1 { font-size: 20px; margin:0; letter-spacing:.3px; }
+  h2 { font-size: 16px; margin:0 0 12px; }
+  .pill { font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--mut); }
+  .pill.ok { color:var(--ok); border-color:#245a39; }
+  .pill.bad { color:var(--bad); border-color:#5a2424; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .full { grid-column: 1 / -1; }
+  label { display:block; font-size:12px; color:var(--mut); margin:10px 0 4px; }
+  input[type=text], input[type=password], textarea, select { width:100%; background:#10131a; color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font:inherit; }
+  textarea { min-height:70px; resize:vertical; }
+  input[type=file] { width:100%; color:var(--mut); }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  .row > div { flex:1 1 140px; }
+  button { background:var(--acc); color:#07101f; border:0; border-radius:8px; padding:10px 16px; font:inherit; font-weight:600; cursor:pointer; margin-top:14px; }
+  button.ghost { background:transparent; color:var(--txt); border:1px solid var(--line); margin:0; padding:6px 10px; font-weight:500; }
+  button.danger { color:var(--bad); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .preview { margin-top:10px; max-width:100%; max-height:240px; border-radius:8px; display:none; }
+  .out { margin-top:14px; }
+  .say { font-size:18px; font-weight:600; margin:0 0 6px; }
+  .say.known { color:var(--ok); } .say.unknown { color:var(--bad); }
+  .err { color:var(--bad); }
+  .warn { color:#f0b43c; }
+  .meta { color:var(--mut); font-size:13px; }
+  .out img { max-width:100%; border-radius:8px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mut); font-weight:500; font-size:12px; }
+  pre { background:#10131a; border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; font-size:12px; max-height:220px; }
+  .check { display:flex; align-items:center; gap:8px; margin-top:22px; color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ASPIRE Face Lab</h1>
+    <span id="status" class="pill">checking server...</span>
+  </header>
+
+  <div class="card" style="margin-bottom:16px">
+    <h2>Connection</h2>
+    <div class="row">
+      <div style="flex:2 1 260px"><label>API key</label><input type="password" id="key" placeholder="paste your API key"></div>
+      <div><label>Rotate image</label>
+        <select id="rotate">
+          <option value="auto">auto (tries all)</option>
+          <option value="0">0</option>
+          <option value="90">90 clockwise</option>
+          <option value="180">180</option>
+          <option value="270">270 clockwise</option>
+        </select>
+      </div>
+      <div class="check"><input type="checkbox" id="flip"><label for="flip" style="margin:0">mirror first (glasses cam)</label></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1. Remember someone</h2>
+      <input type="file" id="enFile" accept="image/*">
+      <img id="enPrev" class="preview" alt="">
+      <div class="row">
+        <div><label>Name *</label><input type="text" id="enName" placeholder="Asmita"></div>
+        <div><label>Relation</label><input type="text" id="enRel" placeholder="friend, cousin..."></div>
+      </div>
+      <label>Persona (how they behave, what they like, how to talk to them)</label>
+      <textarea id="enPersona" placeholder="Playful, loves cricket banter, prefers short answers..."></textarea>
+      <label>Notes</label>
+      <input type="text" id="enNotes" placeholder="Optional facts">
+      <button id="enBtn">Remember</button>
+      <div class="out" id="enOut"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Who is this?</h2>
+      <input type="file" id="idFile" accept="image/*">
+      <img id="idPrev" class="preview" alt="">
+      <button id="idBtn">Identify</button>
+      <div class="out" id="idOut"></div>
+    </div>
+
+    <div class="card full">
+      <div class="row" style="align-items:center; justify-content:space-between">
+        <h2 style="margin:0">People</h2>
+        <button class="ghost" id="reload">Refresh</button>
+      </div>
+      <div id="people" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+$('key').value = params.get('key') || localStorage.getItem('aspire_key') || '';
+$('key').addEventListener('change', () => localStorage.setItem('aspire_key', $('key').value));
+if (params.get('key')) localStorage.setItem('aspire_key', params.get('key'));
+
+function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+function node(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({ 'X-API-Key': $('key').value.trim() }, opts.headers || {});
+  const r = await fetch(path, opts);
+  let j; try { j = await r.json(); } catch (e) { j = { ok: false, error: 'Bad response (' + r.status + ')' }; }
+  if (!r.ok && !j.error) j.error = 'HTTP ' + r.status;
+  return j;
+}
+
+function formWith(fileEl, extra) {
+  const fd = new FormData();
+  fd.append('image', fileEl.files[0]);
+  fd.append('rotate', $('rotate').value);
+  fd.append('flip', $('flip').checked ? '1' : '0');
+  fd.append('annotate', '1');
+  for (const k in extra) fd.append(k, extra[k]);
+  return fd;
+}
+
+function preview(fileEl, imgEl) {
+  fileEl.addEventListener('change', () => {
+    const f = fileEl.files[0];
+    if (!f) { imgEl.style.display = 'none'; return; }
+    imgEl.src = URL.createObjectURL(f);
+    imgEl.style.display = 'block';
+  });
+}
+preview($('enFile'), $('enPrev'));
+preview($('idFile'), $('idPrev'));
+
+function showAnnotated(out, b64) {
+  if (!b64) return;
+  const img = document.createElement('img');
+  img.src = 'data:image/jpeg;base64,' + b64;
+  out.appendChild(img);
+}
+
+async function refreshStatus() {
+  try {
+    const j = await (await fetch('/health')).json();
+    $('status').textContent = j.people + ' people · ' + j.storage + ' storage · ' + j.model + ' · threshold ' + j.threshold
+      + (j.re_enroll_needed ? ' · ' + j.re_enroll_needed + ' need re-enrolling' : '');
+    $('status').className = 'pill ok';
+  } catch (e) {
+    $('status').textContent = 'server unreachable';
+    $('status').className = 'pill bad';
+  }
+}
+
+async function refreshPeople() {
+  const box = $('people');
+  clear(box);
+  const j = await api('/people');
+  if (!j.ok) { box.appendChild(node('div', 'err', j.error)); return; }
+  if (!j.people.length) { box.appendChild(node('div', 'meta', 'Nobody enrolled yet.')); return; }
+  const t = node('table');
+  const head = node('tr');
+  ['Name', 'Relation', 'Persona', 'Samples', ''].forEach(h => head.appendChild(node('th', '', h)));
+  t.appendChild(head);
+  j.people.forEach(p => {
+    const tr = node('tr');
+    tr.appendChild(node('td', '', p.name));
+    tr.appendChild(node('td', '', p.relation || '-'));
+    tr.appendChild(node('td', '', p.persona || '-'));
+    tr.appendChild(node('td', p.stale ? 'warn' : '', String(p.samples) + (p.stale ? ' (re-enroll needed)' : '')));
+    const td = node('td');
+    const del = node('button', 'ghost danger', 'Forget');
+    del.onclick = async () => {
+      if (!confirm('Forget ' + p.name + '? This deletes their face data.')) return;
+      const r = await api('/people/' + encodeURIComponent(p.id), { method: 'DELETE' });
+      if (!r.ok) alert(r.error);
+      refreshPeople(); refreshStatus();
+    };
+    td.appendChild(del);
+    tr.appendChild(td);
+    t.appendChild(tr);
+  });
+  box.appendChild(t);
+}
+
+$('enBtn').onclick = async () => {
+  const out = $('enOut'); clear(out);
+  if (!$('enFile').files[0]) { out.appendChild(node('div', 'err', 'Choose a photo first.')); return; }
+  if (!$('enName').value.trim()) { out.appendChild(node('div', 'err', 'Enter a name.')); return; }
+  $('enBtn').disabled = true;
+  out.appendChild(node('div', 'meta', 'Working...'));
+  const j = await api('/enroll', { method: 'POST', body: formWith($('enFile'), {
+    name: $('enName').value.trim(), relation: $('enRel').value.trim(),
+    persona: $('enPersona').value.trim(), notes: $('enNotes').value.trim() }) });
+  clear(out);
+  if (!j.ok) out.appendChild(node('div', 'err', j.error));
+  else {
+    out.appendChild(node('p', 'say known', j.say));
+    out.appendChild(node('div', 'meta', 'samples: ' + j.samples + ' · face score ' + j.face_score + ' · ' + j.ms + ' ms · rotation ' + j.rotation_used + (j.synced ? '' : ' · NOT synced')
+      + (j.quality ? ' · face ' + j.quality.face_px + 'px · turn ' + j.quality.turn + ' · sharp ' + j.quality.sharpness : '')));
+    if (j.warning) out.appendChild(node('div', 'warn', j.warning));
+    if (j.note) out.appendChild(node('div', 'meta', j.note));
+    showAnnotated(out, j.annotated);
+    refreshPeople(); refreshStatus();
+  }
+  $('enBtn').disabled = false;
+};
+
+$('idBtn').onclick = async () => {
+  const out = $('idOut'); clear(out);
+  if (!$('idFile').files[0]) { out.appendChild(node('div', 'err', 'Choose a photo first.')); return; }
+  $('idBtn').disabled = true;
+  out.appendChild(node('div', 'meta', 'Working...'));
+  const j = await api('/identify', { method: 'POST', body: formWith($('idFile'), {}) });
+  clear(out);
+  if (!j.ok) out.appendChild(node('div', 'err', j.error));
+  else {
+    out.appendChild(node('p', 'say ' + (j.known ? 'known' : 'unknown'), j.say));
+    out.appendChild(node('div', 'meta', j.faces + ' face(s) · best score ' + j.score + ' (threshold ' + (j.threshold ?? '-') + ') · margin ' + (j.margin ?? '-') + ' · ' + j.ms + ' ms · rotation ' + j.rotation_used));
+    if (j.persona_text) out.appendChild(node('div', '', j.persona_text));
+    if (j.candidates && j.candidates.length) {
+      out.appendChild(node('div', 'meta', 'Closest: ' + j.candidates.map(c => c.name + ' ' + c.score).join(' · ')));
+    }
+    showAnnotated(out, j.annotated);
+    const raw = Object.assign({}, j); delete raw.annotated;
+    out.appendChild(node('pre', '', JSON.stringify(raw, null, 2)));
+  }
+  $('idBtn').disabled = false;
+};
+
+$('reload').onclick = () => { refreshPeople(); refreshStatus(); };
+refreshStatus();
+if ($('key').value) refreshPeople();
+</script>
+</body>
+</html> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASPIRE Face Lab</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --txt:#e8eaf0; --mut:#8b93a5; --acc:#5b9dff; --ok:#3ecf6e; --bad:#ff5d5d; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  h1 { font-size: 20px; margin:0; letter-spacing:.3px; }
+  h2 { font-size: 16px; margin:0 0 12px; }
+  .pill { font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--mut); }
+  .pill.ok { color:var(--ok); border-color:#245a39; }
+  .pill.bad { color:var(--bad); border-color:#5a2424; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .full { grid-column: 1 / -1; }
+  label { display:block; font-size:12px; color:var(--mut); margin:10px 0 4px; }
+  input[type=text], input[type=password], textarea, select { width:100%; background:#10131a; color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font:inherit; }
+  textarea { min-height:70px; resize:vertical; }
+  input[type=file] { width:100%; color:var(--mut); }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  .row > div { flex:1 1 140px; }
+  button { background:var(--acc); color:#07101f; border:0; border-radius:8px; padding:10px 16px; font:inherit; font-weight:600; cursor:pointer; margin-top:14px; }
+  button.ghost { background:transparent; color:var(--txt); border:1px solid var(--line); margin:0; padding:6px 10px; font-weight:500; }
+  button.danger { color:var(--bad); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .preview { margin-top:10px; max-width:100%; max-height:240px; border-radius:8px; display:none; }
+  .out { margin-top:14px; }
+  .say { font-size:18px; font-weight:600; margin:0 0 6px; }
+  .say.known { color:var(--ok); } .say.unknown { color:var(--bad); }
+  .err { color:var(--bad); }
+  .warn { color:#f0b43c; }
+  .meta { color:var(--mut); font-size:13px; }
+  .out img { max-width:100%; border-radius:8px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mut); font-weight:500; font-size:12px; }
+  pre { background:#10131a; border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; font-size:12px; max-height:220px; }
+  .check { display:flex; align-items:center; gap:8px; margin-top:22px; color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ASPIRE Face Lab</h1>
+    <span id="status" class="pill">checking server...</span>
+  </header>
+
+  <div class="card" style="margin-bottom:16px">
+    <h2>Connection</h2>
+    <div class="row">
+      <div style="flex:2 1 260px"><label>API key</label><input type="password" id="key" placeholder="paste your API key"></div>
+      <div><label>Rotate image</label>
+        <select id="rotate">
+          <option value="auto">auto (tries all)</option>
+          <option value="0">0</option>
+          <option value="90">90 clockwise</option>
+          <option value="180">180</option>
+          <option value="270">270 clockwise</option>
+        </select>
+      </div>
+      <div class="check"><input type="checkbox" id="flip"><label for="flip" style="margin:0">mirror first (glasses cam)</label></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1. Remember someone</h2>
+      <input type="file" id="enFile" accept="image/*">
+      <img id="enPrev" class="preview" alt="">
+      <div class="row">
+        <div><label>Name *</label><input type="text" id="enName" placeholder="Asmita"></div>
+        <div><label>Relation</label><input type="text" id="enRel" placeholder="friend, cousin..."></div>
+      </div>
+      <label>Persona (how they behave, what they like, how to talk to them)</label>
+      <textarea id="enPersona" placeholder="Playful, loves cricket banter, prefers short answers..."></textarea>
+      <label>Notes</label>
+      <input type="text" id="enNotes" placeholder="Optional facts">
+      <button id="enBtn">Remember</button>
+      <div class="out" id="enOut"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Who is this?</h2>
+      <input type="file" id="idFile" accept="image/*">
+      <img id="idPrev" class="preview" alt="">
+      <button id="idBtn">Identify</button>
+      <div class="out" id="idOut"></div>
+    </div>
+
+    <div class="card full">
+      <div class="row" style="align-items:center; justify-content:space-between">
+        <h2 style="margin:0">People</h2>
+        <button class="ghost" id="reload">Refresh</button>
+      </div>
+      <div id="people" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+$('key').value = params.get('key') || localStorage.getItem('aspire_key') || '';
+$('key').addEventListener('change', () => localStorage.setItem('aspire_key', $('key').value));
+if (params.get('key')) localStorage.setItem('aspire_key', params.get('key'));
+
+function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+function node(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({ 'X-API-Key': $('key').value.trim() }, opts.headers || {});
+  const r = await fetch(path, opts);
+  let j; try { j = await r.json(); } catch (e) { j = { ok: false, error: 'Bad response (' + r.status + ')' }; }
+  if (!r.ok && !j.error) j.error = 'HTTP ' + r.status;
+  return j;
+}
+
+function formWith(fileEl, extra) {
+  const fd = new FormData();
+  fd.append('image', fileEl.files[0]);
+  fd.append('rotate', $('rotate').value);
+  fd.append('flip', $('flip').checked ? '1' : '0');
+  fd.append('annotate', '1');
+  for (const k in extra) fd.append(k, extra[k]);
+  return fd;
+}
+
+function preview(fileEl, imgEl) {
+  fileEl.addEventListener('change', () => {
+    const f = fileEl.files[0];
+    if (!f) { imgEl.style.display = 'none'; return; }
+    imgEl.src = URL.createObjectURL(f);
+    imgEl.style.display = 'block';
+  });
+}
+preview($('enFile'), $('enPrev'));
+preview($('idFile'), $('idPrev'));
+
+function showAnnotated(out, b64) {
+  if (!b64) return;
+  const img = document.createElement('img');
+  img.src = 'data:image/jpeg;base64,' + b64;
+  out.appendChild(img);
+}
+
+async function refreshStatus() {
+  try {
+    const j = await (await fetch('/health')).json();
+    $('status').textContent = j.people + ' people · ' + j.storage + ' storage · ' + j.model + ' · threshold ' + j.threshold
+      + (j.re_enroll_needed ? ' · ' + j.re_enroll_needed + ' need re-enrolling' : '');
+    $('status').className = 'pill ok';
+  } catch (e) {
+    $('status').textContent = 'server unreachable';
+    $('status').className = 'pill bad';
+  }
+}
+
+async function refreshPeople() {
+  const box = $('people');
+  clear(box);
+  const j = await api('/people');
+  if (!j.ok) { box.appendChild(node('div', 'err', j.error)); return; }
+  if (!j.people.length) { box.appendChild(node('div', 'meta', 'Nobody enrolled yet.')); return; }
+  const t = node('table');
+  const head = node('tr');
+  ['Name', 'Relation', 'Persona', 'Samples', ''].forEach(h => head.appendChild(node('th', '', h)));
+  t.appendChild(head);
+  j.people.forEach(p => {
+    const tr = node('tr');
+    tr.appendChild(node('td', '', p.name));
+    tr.appendChild(node('td', '', p.relation || '-'));
+    tr.appendChild(node('td', '', p.persona || '-'));
+    tr.appendChild(node('td', p.stale ? 'warn' : '', String(p.samples) + (p.stale ? ' (re-enroll needed)' : '')));
+    const td = node('td');
+    const del = node('button', 'ghost danger', 'Forget');
+    del.onclick = async () => {
+      if (!confirm('Forget ' + p.name + '? This deletes their face data.')) return;
+      const r = await api('/people/' + encodeURIComponent(p.id), { method: 'DELETE' });
+      if (!r.ok) alert(r.error);
+      refreshPeople(); refreshStatus();
+    };
+    td.appendChild(del);
+    tr.appendChild(td);
+    t.appendChild(tr);
+  });
+  box.appendChild(t);
+}
+
+$('enBtn').onclick = async () => {
+  const out = $('enOut'); clear(out);
+  if (!$('enFile').files[0]) { out.appendChild(node('div', 'err', 'Choose a photo first.')); return; }
+  if (!$('enName').value.trim()) { out.appendChild(node('div', 'err', 'Enter a name.')); return; }
+  $('enBtn').disabled = true;
+  out.appendChild(node('div', 'meta', 'Working...'));
+  const j = await api('/enroll', { method: 'POST', body: formWith($('enFile'), {
+    name: $('enName').value.trim(), relation: $('enRel').value.trim(),
+    persona: $('enPersona').value.trim(), notes: $('enNotes').value.trim() }) });
+  clear(out);
+  if (!j.ok) out.appendChild(node('div', 'err', j.error));
+  else {
+    out.appendChild(node('p', 'say known', j.say));
+    out.appendChild(node('div', 'meta', 'samples: ' + j.samples + ' · face score ' + j.face_score + ' · ' + j.ms + ' ms · rotation ' + j.rotation_used + (j.synced ? '' : ' · NOT synced')
+      + (j.quality ? ' · face ' + j.quality.face_px + 'px · turn ' + j.quality.turn + ' · sharp ' + j.quality.sharpness : '')));
+    if (j.warning) out.appendChild(node('div', 'warn', j.warning));
+    if (j.note) out.appendChild(node('div', 'meta', j.note));
+    showAnnotated(out, j.annotated);
+    refreshPeople(); refreshStatus();
+  }
+  $('enBtn').disabled = false;
+};
+
+$('idBtn').onclick = async () => {
+  const out = $('idOut'); clear(out);
+  if (!$('idFile').files[0]) { out.appendChild(node('div', 'err', 'Choose a photo first.')); return; }
+  $('idBtn').disabled = true;
+  out.appendChild(node('div', 'meta', 'Working...'));
+  const j = await api('/identify', { method: 'POST', body: formWith($('idFile'), {}) });
+  clear(out);
+  if (!j.ok) out.appendChild(node('div', 'err', j.error));
+  else {
+    out.appendChild(node('p', 'say ' + (j.known ? 'known' : 'unknown'), j.say));
+    out.appendChild(node('div', 'meta', j.faces + ' face(s) · best score ' + j.score + ' (threshold ' + (j.threshold ?? '-') + ') · margin ' + (j.margin ?? '-') + ' · ' + j.ms + ' ms · rotation ' + j.rotation_used));
+    if (j.far_search) out.appendChild(node('div', 'meta', 'Small / distant face: found by the wide search, so treat the score with more care.'));
+    if (!j.faces && j.image) out.appendChild(node('div', 'meta', 'Searched (' + j.searched + ') a ' + j.image + ' image; the smallest face I accept is ' + j.min_face_px + ' px.'));
+    if (j.persona_text) out.appendChild(node('div', '', j.persona_text));
+    if (j.candidates && j.candidates.length) {
+      out.appendChild(node('div', 'meta', 'Closest: ' + j.candidates.map(c => c.name + ' ' + c.score).join(' · ')));
+    }
+    showAnnotated(out, j.annotated);
+    const raw = Object.assign({}, j); delete raw.annotated;
+    out.appendChild(node('pre', '', JSON.stringify(raw, null, 2)));
+  }
+  $('idBtn').disabled = false;
+};
+
+$('reload').onclick = () => { refreshPeople(); refreshStatus(); };
+refreshStatus();
+if ($('key').value) refreshPeople();
+</script>
+</body>
+</html>
