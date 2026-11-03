@@ -740,7 +740,7 @@ except Exception as e:                       # keep the server up even if Fireba
 
 app = Flask(__name__, static_folder=None)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
-OPEN_PATHS = {"/", "/health", "/favicon.ico"}
+OPEN_PATHS = {"/", "/health", "/favicon.ico", "/upload"}
 
 
 @app.before_request
@@ -773,6 +773,11 @@ def on_error(e):
 
 @app.get("/")
 def index():
+    return send_from_directory(BASE_DIR, "index.html")
+
+@app.get("/upload")
+def upload_page():
+    # Using send_from_directory to match your existing code
     return send_from_directory(BASE_DIR, "index.html")
 
 
